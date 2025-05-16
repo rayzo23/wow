@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import WishForm from "@/components/WishForm";
 import Wishes from "@/components/Wishes";
 import { useWishProgram } from "@/lib/solana";
@@ -27,6 +27,31 @@ export default function Index() {
   
   // UI state management
   const [refreshing, setRefreshing] = useState(false);
+  const [authState, setAuthState] = useState<string>(user ? 'authenticated' : 'unauthenticated');
+  
+  // Monitor auth state changes
+  useEffect(() => {
+    // Track previous and current auth state
+    const newAuthState = user ? 'authenticated' : 'unauthenticated';
+    
+    if (authState !== newAuthState) {
+      console.log(`Auth state changed: ${authState} -> ${newAuthState}`);
+      setAuthState(newAuthState);
+      
+      // Handle authentication success
+      if (newAuthState === 'authenticated' && authState === 'unauthenticated') {
+        toast.success("Successfully signed in");
+        
+        // Create wallet automatically if needed
+        if (!hasWallet && createWallet) {
+          setTimeout(() => {
+            console.log("Attempting to create wallet automatically");
+            createWallet().catch(err => console.error("Auto wallet creation error:", err));
+          }, 1000);
+        }
+      }
+    }
+  }, [user, authState, hasWallet, createWallet]);
   
   // Handle user logout with manual clearing and page refresh
   const handleLogout = async () => {

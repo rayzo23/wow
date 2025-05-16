@@ -26,6 +26,41 @@ export const UserButton = () => {
   const [isHovered, setIsHovered] = useState(false);
   const civicButtonRef = useRef<HTMLDivElement>(null);
 
+  // Track if this is a popup window to handle window opener coordination
+  const [isPopupWindow, setIsPopupWindow] = useState<boolean>(false);
+  
+  // Check if this is a popup window and notify the opener when authentication completes
+  useEffect(() => {
+    // Detect if we're in a popup window
+    const isPopup = window.opener && window !== window.opener;
+    setIsPopupWindow(isPopup);
+    
+    // If we're in a popup window and authentication is successful, notify the opener
+    if (isPopup && user) {
+      try {
+        // Try to signal the main window that auth is complete
+        window.opener.postMessage({ type: 'CIVIC_AUTH_COMPLETE', success: true }, '*');
+        console.log('Auth complete message posted to opener window');
+      } catch (error) {
+        console.error('Error notifying parent window:', error);
+      }
+    }
+  }, [user]);
+  
+  // Listen for auth complete messages from popup windows
+  useEffect(() => {
+    const handleAuthComplete = (event: MessageEvent) => {
+      if (event.data && event.data.type === 'CIVIC_AUTH_COMPLETE') {
+        console.log('Received auth complete message from popup');
+        // Refresh the page to ensure state is in sync
+        window.location.reload();
+      }
+    };
+    
+    window.addEventListener('message', handleAuthComplete);
+    return () => window.removeEventListener('message', handleAuthComplete);
+  }, []);
+  
   // Handle authentication state changes with animations
   useEffect(() => {
     if (user) {

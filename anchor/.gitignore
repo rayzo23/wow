@@ -1,0 +1,19 @@
+# Build output
+target/
+.anchor/
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+
+# Keypair files
+*keypair.json
+
+# IDE files
+.idea/
+.vscode/
+
+# OS files
+.DS_Store 

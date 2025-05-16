@@ -1,0 +1,19 @@
+[package]
+name = "wall-of-wish"
+version = "0.1.0"
+description = "Wall of Wishes on Solana blockchain"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "wall_of_wish"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.26.0" 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import WishForm from "@/components/WishForm";
 import Wishes from "@/components/Wishes";
 import { useWishProgram } from "@/lib/solana";
@@ -9,7 +9,7 @@ import { WalletTools } from "@/components/WalletTools";
 import { Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@civic/auth-web3/react";
-import { initAuthHelpers, startAuthTimeoutCheck } from "@/lib/auth-helpers";
+import { initializeAuthListeners, useAuthStateChange } from "@/lib/auth-helpers";
 
 /**
  * Main Index component for the Wall of Wishes application
@@ -30,21 +30,18 @@ export default function Index() {
   const [refreshing, setRefreshing] = useState(false);
   const [authState, setAuthState] = useState<string>(user ? 'authenticated' : 'unauthenticated');
   
-  // Initialize auth helpers when component mounts
+  // Initialize auth listener system when component mounts
   useEffect(() => {
-    // Initialize auth helpers to handle post-login state
-    const cleanup = initAuthHelpers();
-    
-    // Start auth check for Google login flow
-    if (!user && !sessionStorage.getItem('auth_check_in_progress')) {
-      console.log('Starting auth check process');
-      startAuthTimeoutCheck();
+    // Initialize professional auth listeners
+    if (typeof window !== 'undefined') {
+      initializeAuthListeners();
+      console.log('Auth listeners initialized');
     }
     
-    return cleanup;
-  }, [user]);
+    // No cleanup needed - listeners are managed globally
+  }, []);
   
-  // Monitor auth state changes
+  // Monitor auth state changes from the user object
   useEffect(() => {
     // Track previous and current auth state
     const newAuthState = user ? 'authenticated' : 'unauthenticated';
@@ -67,6 +64,29 @@ export default function Index() {
       }
     }
   }, [user, authState, hasWallet, createWallet]);
+  
+  // Subscribe to auth state change events (from our professional system)
+  const handleAuthStateChange = useCallback(() => {
+    console.log('Auth state change detected');
+    // Force a re-render without page refresh
+    setRefreshing(true);
+    
+    // Clear any pending auth toasts
+    toast.dismiss('auth-process');
+    
+    // Small delay to ensure all auth state is updated
+    setTimeout(() => {
+      setRefreshing(false);
+      
+      // Auto-create wallet if needed
+      if (user && !hasWallet && createWallet) {
+        createWallet().catch(err => console.error("Auto wallet creation error:", err));
+      }
+    }, 500);
+  }, [user, hasWallet, createWallet]);
+  
+  // Register the auth state change handler
+  useAuthStateChange(handleAuthStateChange);
   
   // Handle user logout with manual clearing and page refresh
   const handleLogout = async () => {

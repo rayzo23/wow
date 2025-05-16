@@ -12,14 +12,25 @@ import { Key, Shield, UserCircle, User, Check, Sparkles, Wallet } from "lucide-r
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
+// Type definition for user object to prevent TypeScript errors
+interface CivicUser {
+  id?: string;
+  email?: string;
+  name?: string;
+  image?: string;
+}
+
 /**
  * Enterprise-grade UserButton component
  * Provides a professional and consistent authentication experience
  * with visual feedback and seamless wallet integration
  */
 export const UserButton = () => {
+  // Access Civic user context
   const userContext = useUser();
   const { user } = userContext;
+  // Cast user to our defined type to avoid TypeScript errors
+  const typedUser = user as CivicUser | null;
   const { hasWallet, createWallet } = useCivicWallet();
   const [showConnectingState, setShowConnectingState] = useState(false);
   const [animation, setAnimation] = useState("");
@@ -37,12 +48,32 @@ export const UserButton = () => {
     
     // If we're in a popup window and authentication is successful, notify the opener
     if (isPopup && user) {
+      console.log("Detected we're in a popup and user is authenticated");
       try {
-        // Try to signal the main window that auth is complete
-        window.opener.postMessage({ type: 'CIVIC_AUTH_COMPLETE', success: true }, '*');
-        console.log('Auth complete message posted to opener window');
+        // Send multiple messages to increase chance of reception
+        const sendMessage = () => {
+          try {
+            // Notify parent window about successful authentication
+            window.opener.postMessage({ 
+              type: 'CIVIC_AUTH_COMPLETE',
+              timestamp: Date.now() 
+            }, '*');
+          } catch (err) {
+            console.error("Error sending message to parent:", err);
+          }
+        };
+        
+        // Send the message immediately and then every 500ms
+        sendMessage();
+        const messageInterval = setInterval(sendMessage, 500);
+        
+        // Close this popup after ensuring messages were sent
+        setTimeout(() => {
+          clearInterval(messageInterval);
+          window.close();
+        }, 2500);
       } catch (error) {
-        console.error('Error notifying parent window:', error);
+        console.error("Error communicating with parent window:", error);
       }
     }
   }, [user]);
@@ -100,11 +131,15 @@ export const UserButton = () => {
   // Handle sign in action
   const handleSignIn = () => {
     try {
-      // Start auth timeout check to detect login completion
+      // Initialize the professional auth system
       if (typeof window !== 'undefined') {
         // Import dynamically to avoid SSR issues
-        import('@/lib/auth-helpers').then(({ startAuthTimeoutCheck }) => {
-          startAuthTimeoutCheck();
+        import('@/lib/auth-helpers').then(({ processSignIn, initializeAuthListeners }) => {
+          // Initialize listeners if needed
+          initializeAuthListeners();
+          
+          // Process the sign-in with proper state tracking
+          processSignIn();
         }).catch(err => {
           console.error('Error importing auth helpers:', err);
         });
@@ -114,8 +149,8 @@ export const UserButton = () => {
       const buttonElement = civicButtonRef.current?.querySelector('button');
       
       if (buttonElement) {
-        // Show loading toast to indicate sign-in is in progress
-        toast.loading("Signing in...", { id: "auth-process" });
+        // Show subtle loading toast to indicate sign-in is in progress
+        toast.loading("Preparing authentication...", { id: "auth-process" });
         
         // Direct programmatic click
         buttonElement.click();
@@ -130,16 +165,16 @@ export const UserButton = () => {
           buttonElement.dispatchEvent(clickEvent);
         }
         
-        // Let user know we're checking for auth completion
+        // Update toast after a delay - more professional
         setTimeout(() => {
-          toast.loading("Waiting for Google authentication...", { id: "auth-process" });
+          toast.loading("Waiting for authentication...", { id: "auth-process" });
         }, 3000);
       } else {
         console.error("Civic button not found");
         toast.info("Opening sign-in dialog");
         // Let users know they can click directly
         setTimeout(() => {
-          toast.info("If the sign-in dialog doesn't appear, please try clicking again");
+          toast.info("If the sign-in dialog doesn't appear, please try clicking directly");
         }, 1500);
       }
     } catch (error) {
@@ -198,9 +233,9 @@ export const UserButton = () => {
                   <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent opacity-20 group-hover:opacity-30 transition-opacity" />
                   
                   <div className="h-full w-full flex items-center justify-center">
-                    {user.image ? (
+                    {typedUser?.image ? (
                       <img 
-                        src={user.image} 
+                        src={typedUser.image} 
                         alt="User avatar" 
                         className="h-full w-full object-cover" 
                       />

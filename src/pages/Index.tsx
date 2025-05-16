@@ -9,6 +9,7 @@ import { WalletTools } from "@/components/WalletTools";
 import { Sparkles, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "@civic/auth-web3/react";
+import { initAuthHelpers, startAuthTimeoutCheck } from "@/lib/auth-helpers";
 
 /**
  * Main Index component for the Wall of Wishes application
@@ -28,6 +29,20 @@ export default function Index() {
   // UI state management
   const [refreshing, setRefreshing] = useState(false);
   const [authState, setAuthState] = useState<string>(user ? 'authenticated' : 'unauthenticated');
+  
+  // Initialize auth helpers when component mounts
+  useEffect(() => {
+    // Initialize auth helpers to handle post-login state
+    const cleanup = initAuthHelpers();
+    
+    // Start auth check for Google login flow
+    if (!user && !sessionStorage.getItem('auth_check_in_progress')) {
+      console.log('Starting auth check process');
+      startAuthTimeoutCheck();
+    }
+    
+    return cleanup;
+  }, [user]);
   
   // Monitor auth state changes
   useEffect(() => {

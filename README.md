@@ -154,7 +154,7 @@ The application features several enterprise-grade UX improvements:
 
 ### Demo Video
 
-Check out our [demo video](https://example.com/wall-of-wishes-demo) that showcases the complete user journey from authentication to blockchain storage.
+Check out our [demo video](https://youtu.be/337r5gKMYCM) that showcases the complete user journey from authentication to blockchain storage.
 
 ## Usage Instructions
 

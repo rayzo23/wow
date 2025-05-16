@@ -100,10 +100,23 @@ export const UserButton = () => {
   // Handle sign in action
   const handleSignIn = () => {
     try {
+      // Start auth timeout check to detect login completion
+      if (typeof window !== 'undefined') {
+        // Import dynamically to avoid SSR issues
+        import('@/lib/auth-helpers').then(({ startAuthTimeoutCheck }) => {
+          startAuthTimeoutCheck();
+        }).catch(err => {
+          console.error('Error importing auth helpers:', err);
+        });
+      }
+      
       // Find the direct button element to click
       const buttonElement = civicButtonRef.current?.querySelector('button');
       
       if (buttonElement) {
+        // Show loading toast to indicate sign-in is in progress
+        toast.loading("Signing in...", { id: "auth-process" });
+        
         // Direct programmatic click
         buttonElement.click();
         
@@ -116,6 +129,11 @@ export const UserButton = () => {
           });
           buttonElement.dispatchEvent(clickEvent);
         }
+        
+        // Let user know we're checking for auth completion
+        setTimeout(() => {
+          toast.loading("Waiting for Google authentication...", { id: "auth-process" });
+        }, 3000);
       } else {
         console.error("Civic button not found");
         toast.info("Opening sign-in dialog");
@@ -127,7 +145,8 @@ export const UserButton = () => {
     } catch (error) {
       console.error("Error triggering sign-in:", error);
       toast.error("Sign-in failed", {
-        description: "Please try clicking directly on the sign-in button"
+        description: "Please try clicking directly on the sign-in button",
+        id: "auth-process"
       });
     }
   };
